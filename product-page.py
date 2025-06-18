@@ -82,7 +82,11 @@ for index, item in enumerate(data):
     try:
         features_tab = driver.find_element(By.CSS_SELECTOR, "li.tab-heading-title a[data-id='1']")
         features_tab.click()
-        time.sleep(1)
+        #scroll to the features tab content
+        driver.execute_script("arguments[0].scrollIntoView();", features_tab)
+        print(f"Switched to Features tab for {title}")
+        # Wait for the features tab content to load
+        time.sleep(10)
         rows = driver.find_elements(By.CSS_SELECTOR, ".product-details-information-tab-content-panel.active tr")
         for row in rows:
             cols = row.find_elements(By.TAG_NAME, "td")
@@ -157,16 +161,6 @@ for index, item in enumerate(data):
             last_img_set = set()
             for j, input_el in enumerate(option_inputs):
                 try:
-                    # Find color name from associated label img or span
-                    label_imgs = input_el.find_elements(By.XPATH, "./following-sibling::img | ../img")
-                    if label_imgs:
-                        color_alt = label_imgs[0].get_attribute("alt") or f"Unknown_Color_{j+1}"
-                    else:
-                        color_alt = f"Unknown_Color_{j+1}"
-
-                    color_folder = full_folder_path / color_alt.strip().replace(" ", "_")
-                    color_folder.mkdir(parents=True, exist_ok=True)
-
                     # Switch the color option using JavaScript
                     driver.execute_script("arguments[0].click();", input_el)
                     WebDriverWait(driver, 10).until(
@@ -179,18 +173,46 @@ for index, item in enumerate(data):
                     img_urls = [img.get_attribute("src") for img in images]
                     current_img_set = set(img_urls)
 
-                    if current_img_set == last_img_set:
-                        print(f"⚠️ Skipping '{color_alt}' — images same as previous")
-                        continue
-                    last_img_set = current_img_set
+                    # Try to get color name from label
+                    label_imgs = input_el.find_elements(By.XPATH, "./following-sibling::img | ../img")
+                    if label_imgs:
+                        color_alt = label_imgs[0].get_attribute("alt") or ""
+                    else:
+                        color_alt = ""
+
+                    # If color_alt is empty, try to extract from image filename
+                    if not color_alt and img_urls:
+                        first_img_url = img_urls[0]
+                        image_name = os.path.basename(first_img_url.split("?")[0])
+                        # Example: N9AL-SAMGS25_media-Space%20Blue-1.jpg
+                        # Extract the part before the last '-' and after the last space
+                        match = re.search(r'-([^-]+)-(\d+)\.jpg$', image_name)
+                        if match:
+                            color_part = match.group(1)
+                            # Replace %20 or underscores with space
+                            color_alt = color_part.replace('%20', ' ').replace('_', ' ').strip()
+                        else:
+                            # Fallback: try to get the word before the last '-'
+                            parts = image_name.rsplit('-', 2)
+                            if len(parts) >= 2:
+                                color_alt = parts[-2].replace('%20', ' ').replace('_', ' ').strip()
+                            else:
+                                color_alt = f"Unknown_Color_{j+1}"
+
+                    if not color_alt:
+                        color_alt = f"Unknown_Color_{j+1}"
+
+                    color_folder = full_folder_path / color_alt.strip().replace(" ", "_")
+                    color_folder.mkdir(parents=True, exist_ok=True)
 
                     # Save each image if not already downloaded
                     for url in img_urls:
                         image_name = os.path.basename(url.split("?")[0])
+                        #print(f"Processing image: {image_name} for color: {color_alt}")
                         image_path = color_folder / image_name
 
                         if image_path.exists():
-                            #print(f"⏩ Already exists: {image_path}")
+                            print(f"⏩ Already exists: {image_path}")
                             continue
 
                         try:
