@@ -184,3 +184,5 @@ cython_debug/
 product_images/
 *.xlsx
 credentials.json
+*.zip
+*.rar
