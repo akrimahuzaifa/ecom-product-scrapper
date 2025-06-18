@@ -1,0 +1,122 @@
+For the reference of below html tags and class and their structure of website i am attaching the html file that contains these tag in website structure
+
+we will be using this as scraper after the first item link is opened. from first section i want to extract the title that is under the 
+<h1 class="product-details-full-content-header-title" itemprop="name">Zizo Nano Liquid Glass Screen Protector,Anti-Scratch/ 9H Hardness Galaxy S9 S8 N9 N8, iPhone X 8 7</h1>
+
+and from the sencond section tag i want to extract the 'Overview'
+<div id="product-details-information-tab-content-container-0" class="product-details-information-tab-content-container" data-type="information-content-text"> The Alto 2 is slim but durable, boasting a 16 ft drop-tested protection to safeguard you from everyday bumps and drops, while also featuring raised screen and camera protection for 360 degrees of defense. Its REAL SENSE buttons make it easy to maintain functionality and tactile response even during frequent use. Available in several fun colors, or Black for a more minimalistic look.</div>
+then extract all Features & Specs that appear on clicking this li (i.e. MSRP, Material, Compatible Devices, Weight, Master Case Quantity, Product Category, Product)
+<li class="product-details-information-tab-title tab-heading-title active" role="presentation"><a href="#" data-action="selected-tab" data-id="1" data-target="#product-details-information-tab-1" data-toggle="tab" aria-expanded="true">Features &amp; Specs</a></li>
+
+
+after that i want to loop through the
+div having class="custcol2-controls product-views-option-color-container " as attribute and containing like this
+option_inputs = driver.find_elements(By.CSS_SELECTOR, "div.product-views-option-color-container input.product-views-option-color-picker-input")
+and click on the first option and extract SKU
+<span class="product-line-sku-value" itemprop="sku"> N9AL-SAMGS25-PK </span>
+
+price (different for every option possible)
+<span class="product-views-price-lead" itemprop="price" data-rate="5.25" data-role="price-lead-formatted"> $5.25 </span>
+
+Option Name from alt attribute
+<img data-label="label-custcol2" value="1407" src="/c.4215023/Images/items/colors/K591.png" style="height:;width:35px" alt="Black" class="product-views-option-color-picker-box-img active">
+
+-------
+and save in extracted infor into new excel
+
+-------
+ want to add and use the same logic here as below to download the images
+
+=== Find color option radio buttons
+```bash
+        option_inputs = driver.find_elements(By.CSS_SELECTOR, "div.product-views-option-color-container input.product-views-option-color-picker-input")
+        print(f"For Index: {index} Name: {product_name}\nFound{len(option_inputs)} color options.")
+        
+        # If no color options, just download the main gallery
+        if not option_inputs or len(option_inputs) == 1:
+            # No multi options — download main gallery
+            print(f"Only 1 or No color options found for {product_name}. Downloading main gallery images.")
+            images = driver.find_elements(By.CSS_SELECTOR, ".bx-custom-pager img")
+            img_urls = [img.get_attribute("src") for img in images]
+
+            for url in img_urls:
+                image_name = os.path.basename(url.split("?")[0])  # Strip query params
+                image_path = Path(full_folder_path) / image_name
+
+                if image_path.exists():
+                    print(f"⏩ Skipping download, already exists: {image_path}")
+                    continue
+
+                try:
+                    with open(image_path, "wb") as f:
+                        f.write(requests.get(url).content)
+                    print(f"✅ Downloaded: {image_path}")
+                except Exception as e:
+                    print(f"❌ Failed to download {url}: {e}")
+        else:
+            # === Loop through each color option
+            # Track last image set to compare
+            last_img_set = set()
+
+            for j, input_el in enumerate(option_inputs):
+                try:
+                    # Find color name from associated label img or span
+                    label_imgs = input_el.find_elements(By.XPATH, "./following-sibling::img | ../img")
+                    if label_imgs:
+                        color_alt = label_imgs[0].get_attribute("alt") or "Unknown"
+                    else:
+                        color_alt = f"Unknown_Color_{j+1}"
+
+                    color_folder = Path(full_folder_path) / color_alt.strip().replace(" ", "_")
+                    color_folder.mkdir(parents=True, exist_ok=True)
+
+                    # === Switch the color option using JavaScript
+                    driver.execute_script("arguments[0].click();", input_el)
+
+                    # Wait for images to update
+                    WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.CLASS_NAME, "bx-custom-pager"))
+                    )
+                    time.sleep(2)  # Let images visually update
+
+                    # Scrape current gallery image URLs
+                    images = driver.find_elements(By.CSS_SELECTOR, ".bx-custom-pager img")
+                    img_urls = [img.get_attribute("src") for img in images]
+                    current_img_set = set(img_urls)
+
+                    if current_img_set == last_img_set:
+                        print(f"⚠️ Skipping '{color_alt}' — images same as previous")
+                        continue
+                    last_img_set = current_img_set
+
+                    # Save each image if not already downloaded
+                    for url in img_urls:
+                        image_name = os.path.basename(url.split("?")[0])
+                        image_path = color_folder / image_name
+
+                        if image_path.exists():
+                            print(f"⏩ Already exists: {image_path}")
+                            continue
+
+                        try:
+                            with open(image_path, "wb") as f:
+                                f.write(requests.get(url).content)
+                            print(f"✅ Saved: {image_path}")
+                        except Exception as e:
+                            print(f"❌ Failed to download {url}: {e}")
+
+                except Exception as e:
+                    print(f"⚠️ Error on color variant for {index}th product '{product_name}': {e}")
+
+        # Close the product detail tab and switch back to the cart
+        driver.close()
+        driver.switch_to.window(driver.window_handles[0])
+    else:
+        print(f"ℹ️  Skipping image download for '{product_name}' — no detail link. (OUT OF STOCK?)")
+        print(f"Setting Price from — data-rate attribute.")
+        if not price:  # fallback if visible text is empty
+            price = f"${price_el.get_attribute('data-rate')}"
+            print(f"🔁 Used data-rate instead: {price}")
+        else:
+            print(f"✅ Got price from text: {price}")
+```
