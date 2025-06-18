@@ -182,7 +182,6 @@ cython_debug/
 
 #custom file and directory names
 product_images/
-*.xlsx
 credentials.json
 *.zip
 *.rar
