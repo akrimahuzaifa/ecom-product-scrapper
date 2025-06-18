@@ -56,8 +56,10 @@ results = []
 
 for index, item in enumerate(data):
     product_link = item.get('Product Link')
-    if not product_link:
+    if not product_link or not str(product_link).strip() or product_link == "nan" or product_link == "":
+        print(f"Skipping product at index {index} due to missing or invalid link => {product_link}")
         continue
+    print(f"Opening product link: {product_link}")
     driver.execute_script("window.open(arguments[0]);", product_link)
     driver.switch_to.window(driver.window_handles[-1])
     #driver.get(product_link)
@@ -86,7 +88,7 @@ for index, item in enumerate(data):
         driver.execute_script("arguments[0].scrollIntoView();", features_tab)
         print(f"Switched to Features tab for {title}")
         # Wait for the features tab content to load
-        time.sleep(10)
+        time.sleep(2)
         rows = driver.find_elements(By.CSS_SELECTOR, ".product-details-information-tab-content-panel.active tr")
         for row in rows:
             cols = row.find_elements(By.TAG_NAME, "td")
@@ -108,7 +110,7 @@ for index, item in enumerate(data):
     # 4. Loop through color options and download images
     try:
         option_inputs = driver.find_elements(By.CSS_SELECTOR, "div.product-views-option-color-container input.product-views-option-color-picker-input")
-        print(f"For Index: {index} Name: {title}\nFound {len(option_inputs)} color options.")
+        print(f"For Index: {index} Name: {title}\nFound {len(option_inputs)} color options.\nProcessing...")
 
         if not option_inputs or len(option_inputs) == 1:
             # No multi options — download main gallery
@@ -121,7 +123,7 @@ for index, item in enumerate(data):
                 image_path = full_folder_path / image_name
 
                 if image_path.exists():
-                    print(f"⏩ Skipping download, already exists: {image_path}")
+                    #print(f"⏩ Skipping download, already exists: {image_path}")
                     continue
 
                 try:
@@ -212,7 +214,7 @@ for index, item in enumerate(data):
                         image_path = color_folder / image_name
 
                         if image_path.exists():
-                            print(f"⏩ Already exists: {image_path}")
+                            #print(f"⏩ Already exists: {image_path}")
                             continue
 
                         try:
@@ -270,15 +272,15 @@ for index, item in enumerate(data):
     empty_row = {key: "" for key in results[0].keys()} if results else {}
     if empty_row:
         results.append(empty_row)
-    
+    print(f"Processed features: {features}")
     # Close the product detail tab and switch back to the cart
     driver.close()
     driver.switch_to.window(driver.window_handles[0])
 
     # Remove break to process all products
-    if index >= 1:  # For testing, remove this line to process all products
-        print("Stopping after 2 products for testing.")
-        break
+    # if index >= 1:  # For testing, remove this line to process all products
+    #     print("Stopping after 2 products for testing.")
+    #     break
 
 driver.quit()
 
