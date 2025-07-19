@@ -1,9 +1,10 @@
 import ast
+from datetime import date
 
 import pandas as pd
 
 # Read the Excel file
-df = pd.read_excel('extracted_products.xlsx')
+df = pd.read_excel(f'extracted_products_{date.today()} - Copy.xlsx')
 
 # Display the first few rows
 #print(df.head())
@@ -44,4 +45,4 @@ for index, row in features_column.items():
     df.at[index, 'Features_HTML'] = html_table
 
 # Save the updated DataFrame to a new Excel file
-df.to_excel('extracted_products_with_html_tables.xlsx', index=False)
+df.to_excel(f'extracted_products_with_html_tables_{date.today()}.xlsx', index=False)

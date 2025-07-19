@@ -1,3 +1,4 @@
+from datetime import date
 import json
 import pandas as pd
 from selenium import webdriver
@@ -23,7 +24,7 @@ WEB_URL = creds["web_url"]
 
 
 # Read Excel file
-df = pd.read_excel('cart_items-link.xlsx')
+df = pd.read_excel('cart_items-link-july-17-2025.xlsx')
 data = df.to_dict(orient='records')
 
 options = Options()
@@ -290,5 +291,5 @@ for r in results:
 
 # Save to Excel
 output_df = pd.DataFrame(results)
-output_df.to_excel("extracted_products.xlsx", index=False)
-print("Data extraction complete. Results saved to 'extracted_products.xlsx'.")
+output_df.to_excel(f"extracted_products_{date.today()}.xlsx", index=False)
+print(f"Data extraction complete. Results saved to 'extracted_products_{date.today()}.xlsx'.")
