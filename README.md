@@ -1,4 +1,4 @@
-# Wireless Product Scraper
+# E-Commerce Product Scraper
 
 A Python-based tool to automate the extraction of product details and images from the shopping cart of an e-commerce website (e.g., [balajiwireless.com](https://www.balajiwireless.com/)). The script logs in, navigates to the cart, scrapes product information, and downloads product images, saving all data to an Excel file.
 
