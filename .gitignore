@@ -186,3 +186,4 @@ credentials.json
 *.zip
 *.rar
 amazon/amazon_images/
+data/

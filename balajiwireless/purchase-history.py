@@ -55,23 +55,43 @@ if driver.current_url != ACCOUNT_URL:
 
 # Wait for the "Purchases" side nav item to appear
 purchases_nav_selector = 'a.menu-tree-node-item-anchor[data-id="orders"]'
-wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, purchases_nav_selector))).click()
+wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, purchases_nav_selector)))
+
+# Click the "Purchases" side nav item
+driver.find_element(By.CSS_SELECTOR, purchases_nav_selector).click()
+
 
 # Wait for the "Purchase History" link to appear after expanding "Purchases"
 purchase_history_selector = 'a.menu-tree-node-item-anchor[data-id="purchases"]'
-wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, purchase_history_selector))).click()
+wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, purchase_history_selector)))
+driver.find_element(By.CSS_SELECTOR, purchase_history_selector).click()
+
 
 # Wait for the order history table to appear
 order_history_table_selector = 'table.order-history-list-recordviews-actionable-table'
 wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, order_history_table_selector)))
-time.sleep(5)  # Extra wait to ensure table is fully loaded
+time.sleep(2)  # Extra wait to ensure table is fully loaded
 
-# Click on the specific order number link after the table appears
-order_no_selector = 'a[href="#/purchases/view/salesorder/54455818"]'
-wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_no_selector))).click()
+# # Click on the specific order number link after the table appears
+# order_no_selector = 'a[href="#/purchases/view/salesorder/54455818"]'
+# wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, order_no_selector)))
+# driver.find_element(By.CSS_SELECTOR, order_no_selector).click()
+
+# Wait for the order history table to appear
+order_history_table_selector = 'table.order-history-list-recordviews-actionable-table'
+wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, order_history_table_selector)))
+order_history_table = driver.find_element(By.CSS_SELECTOR, order_history_table_selector)
+
+# Find the first row and click its link
+first_row = order_history_table.find_element(By.CSS_SELECTOR, 'tr.recordviews-actionable')
+#print(f"Found first order row: {first_row.get_attribute('outerHTML')}")
+first_link = first_row.find_element(By.TAG_NAME, 'a')
+#print(f"Found link in first order row: {first_link.get_attribute('outerHTML')}")
+first_link.click()
+#print("Clicked on first order row: Navigating to order details page.")
+#print("Clicked on order: Navigating to order details page.")
 
 # === Step 3: Scrape order details and save to Excel ===
-
 # Wait for the order detail section to appear
 order_packages_selector = 'div[data-view="OrderPackages"]'
 wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, order_packages_selector)))
@@ -82,7 +102,7 @@ package_dividers = order_packages.find_elements(By.CSS_SELECTOR, 'div.order-hist
 
 all_items = []
 
-for divider in package_dividers:
+for divider_idx, divider in enumerate(package_dividers):
     # Find the accordion body inside this divider
     accordion_body = divider.find_element(By.CSS_SELECTOR, 'div.order-history-packages-accordion-body')
     # If not expanded, expand it by clicking the header (if needed)
@@ -96,11 +116,38 @@ for divider in package_dividers:
 
     # Now, get all order item rows inside this expanded accordion
     item_rows = accordion_body.find_elements(By.CSS_SELECTOR, 'tr[data-type="order-item"]')
-    for row in item_rows:
+    for row_idx, row in enumerate(item_rows):
+        print(f"Processing divider {divider_idx}, row {row_idx}")
+        
         # Product name and link
-        name_link = row.find_element(By.CSS_SELECTOR, 'a.transaction-line-views-cell-actionable-name-link')
-        product_name = name_link.text.strip()
-        product_page_link = name_link.get_attribute("href")
+        # try:
+        #     name_link = row.find_element(By.CSS_SELECTOR, 'a.transaction-line-views-cell-actionable-name-link')
+        #     product_name = name_link.text.strip()
+        #     product_page_link = name_link.get_attribute("href")
+        # except Exception:
+        #     # Fallback for out-of-stock/no-link items
+        #     name_span = row.find_element(By.CSS_SELECTOR, 'span.transaction-line-views-cell-actionable-name-viewonly')
+        #     product_name = name_span.text.strip()
+        #     product_page_link = ""
+        print(f"Processing divider {divider_idx}, row {row_idx}")
+        product_name = ""
+        product_page_link = ""
+        try:
+            # Try to get product name and link from <a>
+            name_link = row.find_element(By.CSS_SELECTOR, 'a.transaction-line-views-cell-actionable-name-link')
+            product_name = name_link.text.strip()
+            product_page_link = name_link.get_attribute("href")
+        except Exception:
+            try:
+                # Fallback for out-of-stock/no-link items: get from <span>
+                name_span = row.find_element(By.CSS_SELECTOR, 'span.transaction-line-views-cell-actionable-name-viewonly')
+                product_name = name_span.text.strip()
+                product_page_link = ""
+            except Exception as e:
+                print(f"Could not find product name in divider {divider_idx}, row {row_idx}: {e}")
+                print("Row HTML:")
+                print(row.get_attribute("outerHTML"))
+                #continue  # Skip this row
 
         # Price
         price = row.find_element(By.CSS_SELECTOR, 'span.transaction-line-views-price-lead').text.strip()
