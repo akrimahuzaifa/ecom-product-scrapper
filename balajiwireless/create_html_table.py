@@ -52,6 +52,7 @@ def create_html_table(excel_file):
 
     # Save the updated DataFrame to same Excel file
     df.to_excel(excel_file, index=False)
+    print(f"create_html_table: Updated Excel file with HTML tables saved to: {excel_file}")
 
 
 if __name__ == "__main__":

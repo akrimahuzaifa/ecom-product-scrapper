@@ -11,6 +11,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from product_page import extract_product_data
+from create_html_table import create_html_table
 
 # PRICING_TIERS - Rules to drive List Price from Cost Price 
 # If Cost ≤ $2 → 24.99
@@ -202,9 +203,19 @@ def extract_purchase_history_data():
     df = pd.DataFrame(all_items)
     df.to_excel(output_path, index=False)
     print(f"Saved {len(all_items)} items to {output_path}")
+    driver.close()
+    driver.quit()
     return output_path
 
 if __name__ == "__main__":
-    purchase_history_data = extract_purchase_history_data()
-    extract_product_data(purchase_history_data)
+    filepath = Path("data/purchase_history/purchase_items.xlsx")
+    if not os.path.isfile(filepath):
+        print("File not found. Extracting purchase history data...")
+        filepath = extract_purchase_history_data()
+    print(f"purchase_history: Using purchase history file: {filepath}")
+    filepath = extract_product_data(filepath)
+    print(f"purchase_history: Enriched purchase history data saved to: {filepath}")
+    create_html_table(filepath)
+    print(f"purchase_history: HTML tables added to purchase history data in: {filepath}")
+
 

@@ -59,7 +59,7 @@ def extract_product_data(excel_file):
 
     for index, item in enumerate(data):
         product_link = item.get('Product Link')
-        if not product_link or not str(product_link).strip() or product_link == "nan" or product_link == "":
+        if pd.isna(product_link) or not str(product_link).strip():
             print(f"Skipping product at index {index} due to missing or invalid link => {product_link}")
             continue
         print(f"Opening product link: {product_link}")
@@ -272,9 +272,9 @@ def extract_product_data(excel_file):
             })
 
         # Add an empty row after each product
-        empty_row = {key: "" for key in results[0].keys()} if results else {}
-        if empty_row:
-            results.append(empty_row)
+        # empty_row = {key: "" for key in results[0].keys()} if results else {}
+        # if empty_row:
+        #     results.append(empty_row)
         print(f"Processed features: {features}")
         # Close the product detail tab and switch back to the cart
         driver.close()
@@ -298,7 +298,7 @@ def extract_product_data(excel_file):
     output_df = pd.DataFrame(results)
     file_path = f"{folderpath}/extracted_products_{date.today()}.xlsx"
     output_df.to_excel(file_path, index=False)
-    print(f"Data extraction complete. Results saved to '{file_path}'.")
+    print(f"\nProduct Page: Data extraction complete.\nResults saved to '{file_path}'.")
     return file_path
 
 if __name__ == "__main__":
