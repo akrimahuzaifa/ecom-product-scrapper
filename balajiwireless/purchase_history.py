@@ -201,6 +201,16 @@ def extract_purchase_history_data():
     output_path = Path(f"{folderpath}/purchase_items.xlsx")
     
     df = pd.DataFrame(all_items)
+
+    # Add List Price column using cost_to_list
+    def price_to_float(price_str):
+        try:
+            return float(price_str.replace("$", "").replace(",", "").strip())
+        except Exception:
+            return 0.0
+
+    df["List Price"] = df["Price"].apply(price_to_float).apply(cost_to_list)
+
     df.to_excel(output_path, index=False)
     print(f"Saved {len(all_items)} items to {output_path}")
     driver.close()

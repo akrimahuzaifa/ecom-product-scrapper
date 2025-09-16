@@ -46,6 +46,8 @@ pip install selenium pandas openpyxl requests
 
 ```bash
 python scrape_balaji_cart.py
+#or
+python balajiwireless/purchase_history.py
 ```
 
 - The script will open Chrome, log in, and process your cart.
